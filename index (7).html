@@ -1,0 +1,2708 @@
+<html lang="id" class="scroll-smooth" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Café Penjualan - Pelanggan & Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <div id="app" class="flex-1 flex flex-col">
+    <!-- MOBILE NAVIGATION -->
+    <nav
+      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 md:hidden z-50 flex justify-around items-center h-16"
+      aria-label="Mobile Navigation"
+    >
+      <button
+        @click="setView('menu')"
+        :class="{'text-indigo-600': view==='menu', 'text-gray-600': view!=='menu'}"
+        aria-label="Menu"
+        class="flex flex-col items-center text-sm"
+      >
+        <i class="fas fa-utensils fa-lg"></i>
+        Menu
+      </button>
+      <button
+        @click="setView('cart')"
+        :class="{'text-indigo-600': view==='cart', 'text-gray-600': view!=='cart'}"
+        aria-label="Keranjang"
+        class="flex flex-col items-center text-sm relative"
+      >
+        <i class="fas fa-shopping-cart fa-lg"></i>
+        Keranjang
+        <span
+          v-if="cart.length > 0"
+          class="absolute -top-1 -right-2 bg-red-600 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center"
+          >{{ cart.length }}</span
+        >
+      </button>
+      <button
+        @click="setView('checkout')"
+        :class="{'text-indigo-600': view==='checkout', 'text-gray-600': view!=='checkout'}"
+        aria-label="Checkout"
+        class="flex flex-col items-center text-sm"
+      >
+        <i class="fas fa-credit-card fa-lg"></i>
+        Checkout
+      </button>
+      <button
+        @click="setView('confirmation')"
+        :class="{'text-indigo-600': view==='confirmation', 'text-gray-600': view!=='confirmation'}"
+        aria-label="Konfirmasi"
+        class="flex flex-col items-center text-sm"
+      >
+        <i class="fas fa-check-circle fa-lg"></i>
+        Konfirmasi
+      </button>
+    </nav>
+
+    <!-- HEADER -->
+    <header
+      class="bg-indigo-600 text-white p-4 flex justify-between items-center sticky top-0 z-40"
+    >
+      <h1 class="text-xl font-semibold cursor-pointer" @click="setView('menu')">
+        Café Penjualan
+      </h1>
+      <button
+        class="md:hidden"
+        @click="mobileNavOpen = !mobileNavOpen"
+        aria-label="Toggle Mobile Menu"
+      >
+        <i :class="mobileNavOpen ? 'fas fa-times' : 'fas fa-bars'"></i>
+      </button>
+      <nav
+        class="hidden md:flex space-x-6"
+        aria-label="Desktop Navigation"
+      >
+        <button
+          @click="setView('menu')"
+          :class="view==='menu' ? 'underline' : ''"
+          class="hover:underline"
+        >
+          Menu
+        </button>
+        <button
+          @click="setView('cart')"
+          :class="view==='cart' ? 'underline' : ''"
+          class="hover:underline"
+        >
+          Keranjang
+        </button>
+        <button
+          @click="setView('checkout')"
+          :class="view==='checkout' ? 'underline' : ''"
+          class="hover:underline"
+        >
+          Checkout
+        </button>
+        <button
+          @click="setView('confirmation')"
+          :class="view==='confirmation' ? 'underline' : ''"
+          class="hover:underline"
+        >
+          Konfirmasi
+        </button>
+        <button
+          @click="setView('adminLogin')"
+          class="ml-6 bg-white text-indigo-600 px-3 py-1 rounded hover:bg-indigo-100"
+        >
+          Admin
+        </button>
+      </nav>
+    </header>
+
+    <!-- MOBILE NAV MENU -->
+    <transition name="fade">
+      <nav
+        v-if="mobileNavOpen"
+        class="fixed top-16 left-0 right-0 bg-white border-b border-gray-300 md:hidden z-40 p-4 space-y-4"
+        aria-label="Mobile Navigation Menu"
+      >
+        <button
+          @click="setView('menu'); mobileNavOpen=false"
+          class="block w-full text-left text-indigo-600 font-semibold"
+        >
+          Menu
+        </button>
+        <button
+          @click="setView('cart'); mobileNavOpen=false"
+          class="block w-full text-left"
+        >
+          Keranjang
+        </button>
+        <button
+          @click="setView('checkout'); mobileNavOpen=false"
+          class="block w-full text-left"
+        >
+          Checkout
+        </button>
+        <button
+          @click="setView('confirmation'); mobileNavOpen=false"
+          class="block w-full text-left"
+        >
+          Konfirmasi
+        </button>
+        <button
+          @click="setView('adminLogin'); mobileNavOpen=false"
+          class="block w-full text-left text-red-600 font-semibold"
+        >
+          Admin Login
+        </button>
+      </nav>
+    </transition>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 overflow-auto p-4 max-w-5xl mx-auto w-full">
+      <!-- VIEWS -->
+      <template v-if="view==='menu'">
+        <MenuView
+          :products="products"
+          @viewProduct="viewProduct"
+          @addToCart="addToCart"
+        />
+      </template>
+
+      <template v-if="view==='productDetail'">
+        <ProductDetailView
+          :product="selectedProduct"
+          @addToCart="addToCart"
+          @back="setView('menu')"
+        />
+      </template>
+
+      <template v-if="view==='cart'">
+        <CartView
+          :cart="cart"
+          :products="products"
+          @updateQty="updateCartQty"
+          @removeItem="removeCartItem"
+          @proceedCheckout="setView('checkout')"
+        />
+      </template>
+
+      <template v-if="view==='checkout'">
+        <CheckoutView
+          :cart="cart"
+          :products="products"
+          @submitOrder="submitOrder"
+          @back="setView('cart')"
+        />
+      </template>
+
+      <template v-if="view==='confirmation'">
+        <ConfirmationView
+          :order="order"
+          @backToMenu="setView('menu')"
+        />
+      </template>
+
+      <template v-if="view==='adminLogin'">
+        <AdminLoginView
+          @loginSuccess="adminLoginSuccess"
+          @back="setView('menu')"
+        />
+      </template>
+
+      <template v-if="view==='adminDashboard'">
+        <AdminDashboardView
+          :products="products"
+          :orders="orders"
+          :stats="stats"
+          :adminUser="adminUser"
+          @logout="adminLogout"
+          @addProduct="addProduct"
+          @editProduct="editProduct"
+          @deleteProduct="deleteProduct"
+          @importProducts="importProducts"
+          @exportProducts="exportProducts"
+          @updateOrderStatus="updateOrderStatus"
+          @filterOrders="filterOrders"
+          @exportReportCSV="exportReportCSV"
+          @exportReportPDF="exportReportPDF"
+          @updatePromo="updatePromo"
+          @updatePaymentSettings="updatePaymentSettings"
+          @updateTaxShipping="updateTaxShipping"
+          @addAdminAccount="addAdminAccount"
+          @resetPassword="resetPassword"
+          @openPOS="setView('pos')"
+        />
+      </template>
+
+      <template v-if="view==='pos'">
+        <POSView
+          :products="products"
+          @closePOS="setView('adminDashboard')"
+          @submitTransaction="submitTransaction"
+        />
+      </template>
+    </main>
+  </div>
+
+  <!-- Vue 3 CDN -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Axios CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+
+    // Helper: format currency IDR
+    function formatIDR(value) {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+      }).format(value);
+    }
+
+    // Helper: generate random order number
+    function generateOrderNumber() {
+      return 'ORD' + Date.now() + Math.floor(Math.random() * 1000);
+    }
+
+    // Helper: sleep for simulating delay
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // API base URL (for backend)
+    const API_BASE = 'https://your-backend-api.example.com/api';
+
+    // For demo, we will simulate backend with localStorage and mock async calls
+
+    // --- COMPONENTS ---
+
+    // Menu View
+    const MenuView = {
+      props: ['products'],
+      emits: ['viewProduct', 'addToCart'],
+      template: `
+        <section>
+          <h2 class="text-2xl font-semibold mb-4">Menu Café</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <article
+              v-for="product in products"
+              :key="product.id"
+              class="bg-white rounded shadow p-4 flex flex-col"
+            >
+              <img
+                :src="product.photo"
+                :alt="'Foto produk ' + product.name + ', kategori ' + product.category"
+                class="w-full h-40 object-cover rounded mb-2"
+                loading="lazy"
+              />
+              <h3 class="font-semibold text-lg truncate">{{ product.name }}</h3>
+              <p class="text-sm text-gray-600 mb-1">Kategori: {{ product.category }}</p>
+              <p class="text-indigo-600 font-semibold mb-1">{{ formatIDR(product.price) }}</p>
+              <p
+                :class="product.status === 'tersedia' ? 'text-green-600' : 'text-red-600'"
+                class="font-semibold mb-2"
+              >
+                {{ product.status === 'tersedia' ? 'Tersedia' : 'Habis' }}
+              </p>
+              <div class="mt-auto flex space-x-2">
+                <button
+                  class="flex-1 bg-indigo-600 text-white py-1 rounded hover:bg-indigo-700 disabled:opacity-50"
+                  :disabled="product.status !== 'tersedia'"
+                  @click="$emit('viewProduct', product)"
+                >
+                  Detail
+                </button>
+                <button
+                  class="flex-1 bg-green-600 text-white py-1 rounded hover:bg-green-700 disabled:opacity-50"
+                  :disabled="product.status !== 'tersedia'"
+                  @click="$emit('addToCart', product, 1)"
+                >
+                  + Keranjang
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      `,
+      methods: {
+        formatIDR,
+      },
+    };
+
+    // Product Detail View
+    const ProductDetailView = {
+      props: ['product'],
+      emits: ['addToCart', 'back'],
+      data() {
+        return {
+          quantity: 1,
+        };
+      },
+      template: `
+        <section>
+          <button
+            class="mb-4 text-indigo-600 hover:underline flex items-center space-x-2"
+            @click="$emit('back')"
+          >
+            <i class="fas fa-arrow-left"></i><span>Kembali ke Menu</span>
+          </button>
+          <div class="bg-white rounded shadow p-4 max-w-md mx-auto">
+            <img
+              :src="product.photo"
+              :alt="'Gambar besar produk ' + product.name + ', kategori ' + product.category"
+              class="w-full h-64 object-cover rounded mb-4"
+              loading="lazy"
+            />
+            <h2 class="text-2xl font-semibold mb-2">{{ product.name }}</h2>
+            <p class="text-gray-700 mb-2">{{ product.description }}</p>
+            <p class="text-indigo-600 font-semibold mb-4">{{ formatIDR(product.price) }}</p>
+            <p
+              :class="product.status === 'tersedia' ? 'text-green-600' : 'text-red-600'"
+              class="font-semibold mb-4"
+            >
+              {{ product.status === 'tersedia' ? 'Tersedia' : 'Habis' }}
+            </p>
+            <div class="flex items-center space-x-4 mb-4">
+              <label for="qty" class="font-semibold">Jumlah:</label>
+              <input
+                id="qty"
+                type="number"
+                min="1"
+                :max="100"
+                v-model.number="quantity"
+                class="w-20 border border-gray-300 rounded px-2 py-1"
+                :disabled="product.status !== 'tersedia'"
+              />
+            </div>
+            <button
+              class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 disabled:opacity-50"
+              :disabled="product.status !== 'tersedia'"
+              @click="$emit('addToCart', product, quantity)"
+            >
+              Tambah ke Keranjang
+            </button>
+          </div>
+        </section>
+      `,
+      methods: {
+        formatIDR,
+      },
+    };
+
+    // Cart View
+    const CartView = {
+      props: ['cart', 'products'],
+      emits: ['updateQty', 'removeItem', 'proceedCheckout'],
+      computed: {
+        cartItems() {
+          return this.cart.map((item) => {
+            const product = this.products.find((p) => p.id === item.productId);
+            return {
+              ...item,
+              product,
+              subtotal: product ? product.price * item.quantity : 0,
+            };
+          });
+        },
+        subtotal() {
+          return this.cartItems.reduce((acc, item) => acc + item.subtotal, 0);
+        },
+        shippingCost() {
+          return this.subtotal > 0 ? 15000 : 0; // Flat ongkir 15k if any item
+        },
+        discount() {
+          // For demo, no discount
+          return 0;
+        },
+        total() {
+          return this.subtotal + this.shippingCost - this.discount;
+        },
+      },
+      template: `
+        <section>
+          <h2 class="text-2xl font-semibold mb-4">Keranjang Anda</h2>
+          <div v-if="cartItems.length === 0" class="text-center text-gray-600">
+            Keranjang kosong.
+          </div>
+          <div v-else class="space-y-4">
+            <div
+              v-for="item in cartItems"
+              :key="item.productId"
+              class="bg-white rounded shadow p-4 flex items-center space-x-4"
+            >
+              <img
+                :src="item.product.photo"
+                :alt="'Foto produk ' + item.product.name + ', kategori ' + item.product.category"
+                class="w-20 h-20 object-cover rounded"
+                loading="lazy"
+              />
+              <div class="flex-1">
+                <h3 class="font-semibold">{{ item.product.name }}</h3>
+                <p class="text-gray-600">{{ formatIDR(item.product.price) }} x {{ item.quantity }}</p>
+                <p class="font-semibold">{{ formatIDR(item.subtotal) }}</p>
+                <div class="flex items-center space-x-2 mt-2">
+                  <label for="qty" class="text-sm">Jumlah:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    :value="item.quantity"
+                    @input="$emit('updateQty', item.productId, $event.target.valueAsNumber)"
+                    class="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                  />
+                  <button
+                    @click="$emit('removeItem', item.productId)"
+                    class="text-red-600 hover:text-red-800"
+                    aria-label="Hapus item"
+                  >
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white rounded shadow p-4 space-y-2 max-w-md mx-auto">
+              <div class="flex justify-between">
+                <span>Subtotal</span>
+                <span>{{ formatIDR(subtotal) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Ongkos Kirim</span>
+                <span>{{ formatIDR(shippingCost) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Diskon</span>
+                <span>-{{ formatIDR(discount) }}</span>
+              </div>
+              <div class="border-t border-gray-300 pt-2 flex justify-between font-semibold text-lg">
+                <span>Total</span>
+                <span>{{ formatIDR(total) }}</span>
+              </div>
+              <button
+                class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700"
+                @click="$emit('proceedCheckout')"
+              >
+                Lanjut ke Checkout
+              </button>
+            </div>
+          </div>
+        </section>
+      `,
+      methods: {
+        formatIDR,
+      },
+    };
+
+    // Checkout View
+    const CheckoutView = {
+      props: ['cart', 'products'],
+      emits: ['submitOrder', 'back'],
+      data() {
+        return {
+          buyerName: '',
+          buyerAddress: '',
+          buyerPhone: '',
+          paymentMethod: 'QRIS',
+          submitting: false,
+          errorMsg: '',
+        };
+      },
+      computed: {
+        cartItems() {
+          return this.cart.map((item) => {
+            const product = this.products.find((p) => p.id === item.productId);
+            return {
+              ...item,
+              product,
+              subtotal: product ? product.price * item.quantity : 0,
+            };
+          });
+        },
+        subtotal() {
+          return this.cartItems.reduce((acc, item) => acc + item.subtotal, 0);
+        },
+        shippingCost() {
+          return this.subtotal > 0 ? 15000 : 0;
+        },
+        discount() {
+          return 0;
+        },
+        total() {
+          return this.subtotal + this.shippingCost - this.discount;
+        },
+      },
+      methods: {
+        async onSubmit() {
+          this.errorMsg = '';
+          if (
+            !this.buyerName.trim() ||
+            !this.buyerAddress.trim() ||
+            !this.buyerPhone.trim()
+          ) {
+            this.errorMsg = 'Mohon isi semua data pembeli dengan lengkap.';
+            return;
+          }
+          if (this.cart.length === 0) {
+            this.errorMsg = 'Keranjang kosong, tidak bisa checkout.';
+            return;
+          }
+          this.submitting = true;
+          // Simulate API call delay
+          await sleep(1000);
+          // Prepare order data
+          const orderData = {
+            id: generateOrderNumber(),
+            buyerName: this.buyerName.trim(),
+            buyerAddress: this.buyerAddress.trim(),
+            buyerPhone: this.buyerPhone.trim(),
+            paymentMethod: this.paymentMethod,
+            items: this.cartItems.map((i) => ({
+              productId: i.product.id,
+              name: i.product.name,
+              price: i.product.price,
+              quantity: i.quantity,
+              subtotal: i.subtotal,
+            })),
+            subtotal: this.subtotal,
+            shippingCost: this.shippingCost,
+            discount: this.discount,
+            total: this.total,
+            status: 'Diproses',
+            orderTime: new Date().toISOString(),
+            estimatedTime: new Date(Date.now() + 30 * 60000).toISOString(), // +30 minutes
+          };
+          this.$emit('submitOrder', orderData);
+          this.submitting = false;
+        },
+      },
+      template: `
+        <section>
+          <button
+            class="mb-4 text-indigo-600 hover:underline flex items-center space-x-2"
+            @click="$emit('back')"
+          >
+            <i class="fas fa-arrow-left"></i><span>Kembali ke Keranjang</span>
+          </button>
+          <h2 class="text-2xl font-semibold mb-4">Checkout</h2>
+          <form @submit.prevent="onSubmit" class="max-w-md mx-auto bg-white rounded shadow p-6 space-y-4">
+            <div>
+              <label for="buyerName" class="block font-semibold mb-1">Nama Pembeli</label>
+              <input
+                id="buyerName"
+                type="text"
+                v-model="buyerName"
+                required
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                placeholder="Nama lengkap"
+              />
+            </div>
+            <div>
+              <label for="buyerAddress" class="block font-semibold mb-1">Alamat</label>
+              <textarea
+                id="buyerAddress"
+                v-model="buyerAddress"
+                required
+                rows="3"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                placeholder="Alamat lengkap"
+              ></textarea>
+            </div>
+            <div>
+              <label for="buyerPhone" class="block font-semibold mb-1">No. HP</label>
+              <input
+                id="buyerPhone"
+                type="tel"
+                v-model="buyerPhone"
+                required
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                placeholder="0812xxxxxxx"
+              />
+            </div>
+            <div>
+              <label class="block font-semibold mb-1">Metode Pembayaran</label>
+              <select
+                v-model="paymentMethod"
+                class="w-full border border-gray-300 rounded px-3 py-2"
+              >
+                <option value="QRIS">QRIS</option>
+                <option value="E-Wallet">E-Wallet</option>
+                <option value="Transfer Bank">Transfer Bank</option>
+                <option value="COD">COD (Bayar di Tempat)</option>
+              </select>
+            </div>
+            <div class="bg-gray-100 p-4 rounded space-y-2">
+              <h3 class="font-semibold text-lg mb-2">Ringkasan Pesanan</h3>
+              <ul class="max-h-40 overflow-auto text-sm space-y-1">
+                <li v-for="item in cartItems" :key="item.product.id" class="flex justify-between">
+                  <span>{{ item.product.name }} x {{ item.quantity }}</span>
+                  <span>{{ formatIDR(item.subtotal) }}</span>
+                </li>
+              </ul>
+              <div class="border-t border-gray-300 pt-2 flex justify-between font-semibold">
+                <span>Subtotal</span>
+                <span>{{ formatIDR(subtotal) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Ongkos Kirim</span>
+                <span>{{ formatIDR(shippingCost) }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Diskon</span>
+                <span>-{{ formatIDR(discount) }}</span>
+              </div>
+              <div class="border-t border-gray-300 pt-2 flex justify-between font-semibold text-lg">
+                <span>Total</span>
+                <span>{{ formatIDR(total) }}</span>
+              </div>
+            </div>
+            <div v-if="errorMsg" class="text-red-600 font-semibold">{{ errorMsg }}</div>
+            <button
+              type="submit"
+              :disabled="submitting"
+              class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {{ submitting ? 'Memproses...' : 'Konfirmasi Pesanan' }}
+            </button>
+          </form>
+        </section>
+      `,
+      methods: {
+        formatIDR,
+      },
+    };
+
+    // Confirmation View
+    const ConfirmationView = {
+      props: ['order'],
+      emits: ['backToMenu'],
+      template: `
+        <section class="max-w-md mx-auto bg-white rounded shadow p-6 text-center">
+          <h2 class="text-2xl font-semibold mb-4 text-green-600">Pesanan Berhasil!</h2>
+          <p class="mb-2">Nomor Pesanan Anda:</p>
+          <p class="font-mono font-bold text-xl mb-4">{{ order.id }}</p>
+          <p class="mb-2">Estimasi Waktu Pengiriman:</p>
+          <p class="mb-6 font-semibold">
+            {{ new Date(order.estimatedTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }}
+          </p>
+          <button
+            @click="$emit('backToMenu')"
+            class="bg-indigo-600 text-white py-2 px-6 rounded hover:bg-indigo-700"
+          >
+            Kembali ke Menu
+          </button>
+        </section>
+      `,
+    };
+
+    // Admin Login View
+    const AdminLoginView = {
+      emits: ['loginSuccess', 'back'],
+      data() {
+        return {
+          username: '',
+          password: '',
+          errorMsg: '',
+          loading: false,
+        };
+      },
+      methods: {
+        async login() {
+          this.errorMsg = '';
+          if (!this.username.trim() || !this.password) {
+            this.errorMsg = 'Mohon isi username dan password.';
+            return;
+          }
+          this.loading = true;
+          await sleep(500);
+          // For demo: default admin username: admin, password: Admin123
+          if (
+            this.username.trim() === 'admin' &&
+            this.password === 'Admin123'
+          ) {
+            this.$emit('loginSuccess', {
+              username: 'admin',
+              role: 'owner',
+              token: 'demo-token',
+            });
+          } else {
+            this.errorMsg = 'Username atau password salah.';
+          }
+          this.loading = false;
+        },
+      },
+      template: `
+        <section class="max-w-md mx-auto bg-white rounded shadow p-6">
+          <button
+            class="mb-4 text-indigo-600 hover:underline flex items-center space-x-2"
+            @click="$emit('back')"
+          >
+            <i class="fas fa-arrow-left"></i><span>Kembali ke Menu</span>
+          </button>
+          <h2 class="text-2xl font-semibold mb-4">Login Admin</h2>
+          <form @submit.prevent="login" class="space-y-4">
+            <div>
+              <label for="username" class="block font-semibold mb-1">Username</label>
+              <input
+                id="username"
+                type="text"
+                v-model="username"
+                required
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                autocomplete="username"
+              />
+            </div>
+            <div>
+              <label for="password" class="block font-semibold mb-1">Password</label>
+              <input
+                id="password"
+                type="password"
+                v-model="password"
+                required
+                class="w-full border border-gray-300 rounded px-3 py-2"
+                autocomplete="current-password"
+              />
+            </div>
+            <div v-if="errorMsg" class="text-red-600 font-semibold">{{ errorMsg }}</div>
+            <button
+              type="submit"
+              :disabled="loading"
+              class="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {{ loading ? 'Memeriksa...' : 'Login' }}
+            </button>
+          </form>
+        </section>
+      `,
+    };
+
+    // Admin Dashboard View
+    const AdminDashboardView = {
+      props: [
+        'products',
+        'orders',
+        'stats',
+        'adminUser',
+      ],
+      emits: [
+        'logout',
+        'addProduct',
+        'editProduct',
+        'deleteProduct',
+        'importProducts',
+        'exportProducts',
+        'updateOrderStatus',
+        'filterOrders',
+        'exportReportCSV',
+        'exportReportPDF',
+        'updatePromo',
+        'updatePaymentSettings',
+        'updateTaxShipping',
+        'addAdminAccount',
+        'resetPassword',
+        'openPOS',
+      ],
+      data() {
+        return {
+          tab: 'products',
+          productForm: null,
+          productFormMode: 'add', // add or edit
+          productFormErrors: '',
+          importFile: null,
+          orderFilter: {
+            dateFrom: '',
+            dateTo: '',
+            status: '',
+            buyerName: '',
+            paymentMethod: '',
+          },
+          filteredOrders: [],
+          selectedOrder: null,
+          reportDateRange: {
+            from: '',
+            to: '',
+          },
+          promoSettings: {
+            code: '',
+            discountPercent: 0,
+            discountNominal: 0,
+            validFrom: '',
+            validTo: '',
+          },
+          paymentSettings: {
+            QRIS: true,
+            'E-Wallet': true,
+            'Transfer Bank': true,
+            COD: true,
+          },
+          taxShippingSettings: {
+            taxPercent: 10,
+            shippingCost: 15000,
+          },
+          adminAccounts: [
+            { username: 'admin', role: 'owner' },
+          ],
+          newAdminAccount: {
+            username: '',
+            password: '',
+            role: 'staf',
+          },
+          posOpen: false,
+        };
+      },
+      watch: {
+        orders: {
+          immediate: true,
+          handler() {
+            this.applyOrderFilter();
+          },
+        },
+      },
+      mounted() {
+        if (this.orders.length > 0) {
+          this.applyOrderFilter();
+        }
+      },
+      methods: {
+        logout() {
+          this.$emit('logout');
+        },
+        openAddProduct() {
+          this.productFormMode = 'add';
+          this.productForm = {
+            id: null,
+            name: '',
+            price: 0,
+            photo: '',
+            category: '',
+            description: '',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: this.products.length + 1,
+          };
+          this.productFormErrors = '';
+          this.tab = 'productForm';
+        },
+        openEditProduct(product) {
+          this.productFormMode = 'edit';
+          this.productForm = { ...product };
+          this.productFormErrors = '';
+          this.tab = 'productForm';
+        },
+        validateProductForm() {
+          if (!this.productForm.name.trim()) {
+            this.productFormErrors = 'Nama produk wajib diisi.';
+            return false;
+          }
+          if (this.productForm.price <= 0) {
+            this.productFormErrors = 'Harga harus lebih dari 0.';
+            return false;
+          }
+          if (!this.productForm.photo.trim()) {
+            this.productFormErrors = 'URL foto produk wajib diisi.';
+            return false;
+          }
+          if (!this.productForm.category.trim()) {
+            this.productFormErrors = 'Kategori wajib diisi.';
+            return false;
+          }
+          if (!['tersedia', 'habis'].includes(this.productForm.status)) {
+            this.productFormErrors = 'Status produk tidak valid.';
+            return false;
+          }
+          this.productFormErrors = '';
+          return true;
+        },
+        saveProduct() {
+          if (!this.validateProductForm()) return;
+          if (this.productFormMode === 'add') {
+            this.$emit('addProduct', { ...this.productForm, id: Date.now() });
+          } else {
+            this.$emit('editProduct', { ...this.productForm });
+          }
+          this.tab = 'products';
+        },
+        cancelProductForm() {
+          this.tab = 'products';
+        },
+        deleteProductConfirm(product) {
+          if (
+            confirm(
+              `Hapus produk "${product.name}"? Tindakan ini tidak dapat dibatalkan.`
+            )
+          ) {
+            this.$emit('deleteProduct', product.id);
+          }
+        },
+        onImportFileChange(e) {
+          this.importFile = e.target.files[0];
+        },
+        importProductsCSV() {
+          if (!this.importFile) {
+            alert('Pilih file CSV terlebih dahulu.');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const csv = e.target.result;
+            this.$emit('importProducts', csv);
+            this.importFile = null;
+            this.$refs.importFileInput.value = '';
+          };
+          reader.readAsText(this.importFile);
+        },
+        exportProductsCSV() {
+          this.$emit('exportProducts');
+        },
+        applyOrderFilter() {
+          let filtered = this.orders;
+          if (this.orderFilter.dateFrom) {
+            filtered = filtered.filter(
+              (o) => new Date(o.orderTime) >= new Date(this.orderFilter.dateFrom)
+            );
+          }
+          if (this.orderFilter.dateTo) {
+            filtered = filtered.filter(
+              (o) => new Date(o.orderTime) <= new Date(this.orderFilter.dateTo)
+            );
+          }
+          if (this.orderFilter.status) {
+            filtered = filtered.filter((o) => o.status === this.orderFilter.status);
+          }
+          if (this.orderFilter.buyerName.trim()) {
+            filtered = filtered.filter((o) =>
+              o.buyerName.toLowerCase().includes(this.orderFilter.buyerName.toLowerCase())
+            );
+          }
+          if (this.orderFilter.paymentMethod) {
+            filtered = filtered.filter(
+              (o) => o.paymentMethod === this.orderFilter.paymentMethod
+            );
+          }
+          this.filteredOrders = filtered;
+        },
+        updateOrderStatus(order, newStatus) {
+          this.$emit('updateOrderStatus', order.id, newStatus);
+        },
+        exportReportCSV() {
+          this.$emit('exportReportCSV', this.reportDateRange);
+        },
+        exportReportPDF() {
+          this.$emit('exportReportPDF', this.reportDateRange);
+        },
+        updatePromo() {
+          this.$emit('updatePromo', this.promoSettings);
+        },
+        updatePaymentSettings() {
+          this.$emit('updatePaymentSettings', this.paymentSettings);
+        },
+        updateTaxShipping() {
+          this.$emit('updateTaxShipping', this.taxShippingSettings);
+        },
+        addAdminAccount() {
+          if (
+            !this.newAdminAccount.username.trim() ||
+            !this.newAdminAccount.password.trim()
+          ) {
+            alert('Username dan password wajib diisi.');
+            return;
+          }
+          this.$emit('addAdminAccount', { ...this.newAdminAccount });
+          this.newAdminAccount = { username: '', password: '', role: 'staf' };
+        },
+        resetPassword(username) {
+          if (
+            confirm(
+              `Reset password untuk akun "${username}"? Password akan dikirim via email/OTP (simulasi).`
+            )
+          ) {
+            this.$emit('resetPassword', username);
+          }
+        },
+        openPOS() {
+          this.$emit('openPOS');
+        },
+      },
+      template: `
+        <section>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">Dashboard Admin</h2>
+            <button
+              @click="logout"
+              class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+            >
+              Logout
+            </button>
+          </div>
+
+          <nav class="mb-6 flex flex-wrap gap-2">
+            <button
+              @click="tab = 'products'"
+              :class="tab==='products' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-4 py-2 rounded"
+            >
+              Manajemen Produk
+            </button>
+            <button
+              @click="tab = 'orders'"
+              :class="tab==='orders' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-4 py-2 rounded"
+            >
+              Kelola Pesanan
+            </button>
+            <button
+              @click="tab = 'reports'"
+              :class="tab==='reports' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-4 py-2 rounded"
+            >
+              Riwayat & Laporan
+            </button>
+            <button
+              @click="tab = 'settings'"
+              :class="tab==='settings' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-4 py-2 rounded"
+            >
+              Pengaturan
+            </button>
+            <button
+              @click="tab = 'accounts'"
+              :class="tab==='accounts' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700'"
+              class="px-4 py-2 rounded"
+            >
+              Akun Admin
+            </button>
+            <button
+              @click="openPOS"
+              class="ml-auto bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+            >
+              Mode Kasir (POS)
+            </button>
+          </nav>
+
+          <!-- Produk -->
+          <section v-if="tab==='products'">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-xl font-semibold">Daftar Produk</h3>
+              <button
+                @click="openAddProduct"
+                class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+              >
+                + Tambah Produk
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border border-gray-300 rounded">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="p-2 border-b border-gray-300">Foto</th>
+                    <th class="p-2 border-b border-gray-300">Nama</th>
+                    <th class="p-2 border-b border-gray-300">Harga</th>
+                    <th class="p-2 border-b border-gray-300">Kategori</th>
+                    <th class="p-2 border-b border-gray-300">Status</th>
+                    <th class="p-2 border-b border-gray-300">Promo</th>
+                    <th class="p-2 border-b border-gray-300">Featured</th>
+                    <th class="p-2 border-b border-gray-300">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="product in products" :key="product.id" class="border-b border-gray-300">
+                    <td class="p-2">
+                      <img
+                        :src="product.photo"
+                        :alt="'Foto produk ' + product.name + ', kategori ' + product.category"
+                        class="w-16 h-16 object-cover rounded"
+                        loading="lazy"
+                      />
+                    </td>
+                    <td class="p-2">{{ product.name }}</td>
+                    <td class="p-2">{{ formatIDR(product.price) }}</td>
+                    <td class="p-2">{{ product.category }}</td>
+                    <td class="p-2 capitalize" :class="product.status==='tersedia' ? 'text-green-600' : 'text-red-600'">{{ product.status }}</td>
+                    <td class="p-2 text-center">
+                      <input type="checkbox" v-model="product.promo" @change="$emit('editProduct', product)" />
+                    </td>
+                    <td class="p-2 text-center">
+                      <input type="checkbox" v-model="product.featured" @change="$emit('editProduct', product)" />
+                    </td>
+                    <td class="p-2 space-x-2">
+                      <button
+                        @click="openEditProduct(product)"
+                        class="text-indigo-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        @click="deleteProductConfirm(product)"
+                        class="text-red-600 hover:underline"
+                      >
+                        Hapus
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Form Produk -->
+            <section v-if="tab==='productForm'" class="mt-6 max-w-md mx-auto bg-white rounded shadow p-6">
+              <h3 class="text-xl font-semibold mb-4">
+                {{ productFormMode === 'add' ? 'Tambah Produk Baru' : 'Edit Produk' }}
+              </h3>
+              <form @submit.prevent="saveProduct" class="space-y-4">
+                <div>
+                  <label class="block font-semibold mb-1">Nama Produk</label>
+                  <input
+                    type="text"
+                    v-model="productForm.name"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Harga (IDR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    v-model.number="productForm.price"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">URL Foto</label>
+                  <input
+                    type="url"
+                    v-model="productForm.photo"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                    placeholder="https://placehold.co/400x300?text=Produk"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Kategori</label>
+                  <input
+                    type="text"
+                    v-model="productForm.category"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                    placeholder="Contoh: Minuman, Makanan"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Deskripsi Singkat</label>
+                  <textarea
+                    v-model="productForm.description"
+                    rows="3"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="Deskripsi produk"
+                  ></textarea>
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Status</label>
+                  <select
+                    v-model="productForm.status"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  >
+                    <option value="tersedia">Tersedia</option>
+                    <option value="habis">Habis</option>
+                  </select>
+                </div>
+                <div class="flex items-center space-x-4">
+                  <button
+                    type="submit"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                  >
+                    Simpan
+                  </button>
+                  <button
+                    type="button"
+                    @click="cancelProductForm"
+                    class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                  >
+                    Batal
+                  </button>
+                </div>
+                <div v-if="productFormErrors" class="text-red-600 font-semibold mt-2">
+                  {{ productFormErrors }}
+                </div>
+              </form>
+            </section>
+
+            <!-- Import/Export Produk -->
+            <section class="mt-6 max-w-md mx-auto bg-white rounded shadow p-6">
+              <h3 class="text-xl font-semibold mb-4">Impor / Ekspor Produk (CSV)</h3>
+              <div class="mb-4">
+                <input
+                  type="file"
+                  accept=".csv"
+                  @change="onImportFileChange"
+                  ref="importFileInput"
+                  class="mb-2"
+                />
+                <button
+                  @click="importProductsCSV"
+                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mr-2"
+                >
+                  Impor CSV
+                </button>
+                <button
+                  @click="exportProductsCSV"
+                  class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Ekspor CSV
+                </button>
+              </div>
+            </section>
+          </section>
+
+          <!-- Kelola Pesanan -->
+          <section v-if="tab==='orders'">
+            <h3 class="text-xl font-semibold mb-4">Daftar Pesanan Masuk</h3>
+            <form @submit.prevent="applyOrderFilter" class="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl">
+              <div>
+                <label class="block font-semibold mb-1">Dari Tanggal</label>
+                <input
+                  type="date"
+                  v-model="orderFilter.dateFrom"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Sampai Tanggal</label>
+                <input
+                  type="date"
+                  v-model="orderFilter.dateTo"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Status</label>
+                <select
+                  v-model="orderFilter.status"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="">Semua</option>
+                  <option>Diproses</option>
+                  <option>Siap</option>
+                  <option>Selesai</option>
+                </select>
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Metode Pembayaran</label>
+                <select
+                  v-model="orderFilter.paymentMethod"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="">Semua</option>
+                  <option>QRIS</option>
+                  <option>E-Wallet</option>
+                  <option>Transfer Bank</option>
+                  <option>COD</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2 md:col-span-4">
+                <label class="block font-semibold mb-1">Nama Pembeli</label>
+                <input
+                  type="text"
+                  v-model="orderFilter.buyerName"
+                  placeholder="Cari nama pembeli"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div class="sm:col-span-2 md:col-span-4 flex space-x-2">
+                <button
+                  type="submit"
+                  class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  Filter
+                </button>
+                <button
+                  type="button"
+                  @click="orderFilter = { dateFrom:'', dateTo:'', status:'', buyerName:'', paymentMethod:'' }; applyOrderFilter()"
+                  class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+                >
+                  Reset
+                </button>
+              </div>
+            </form>
+
+            <div class="overflow-x-auto max-w-7xl">
+              <table class="w-full text-left border border-gray-300 rounded">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="p-2 border-b border-gray-300">ID Pesanan</th>
+                    <th class="p-2 border-b border-gray-300">Nama Pembeli</th>
+                    <th class="p-2 border-b border-gray-300">Detail Order</th>
+                    <th class="p-2 border-b border-gray-300">Total</th>
+                    <th class="p-2 border-b border-gray-300">Metode Pembayaran</th>
+                    <th class="p-2 border-b border-gray-300">Waktu Order</th>
+                    <th class="p-2 border-b border-gray-300">Status</th>
+                    <th class="p-2 border-b border-gray-300">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="order in filteredOrders" :key="order.id" class="border-b border-gray-300 align-top">
+                    <td class="p-2 font-mono text-sm break-words max-w-xs">{{ order.id }}</td>
+                    <td class="p-2">{{ order.buyerName }}</td>
+                    <td class="p-2 max-w-xs">
+                      <ul class="text-sm list-disc list-inside max-h-32 overflow-auto">
+                        <li v-for="item in order.items" :key="item.productId">
+                          {{ item.name }} x {{ item.quantity }} = {{ formatIDR(item.subtotal) }}
+                        </li>
+                      </ul>
+                    </td>
+                    <td class="p-2 font-semibold">{{ formatIDR(order.total) }}</td>
+                    <td class="p-2">{{ order.paymentMethod }}</td>
+                    <td class="p-2">{{ new Date(order.orderTime).toLocaleString('id-ID') }}</td>
+                    <td class="p-2">
+                      <select
+                        v-model="order.status"
+                        @change="updateOrderStatus(order, order.status)"
+                        class="border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option>Diproses</option>
+                        <option>Siap</option>
+                        <option>Selesai</option>
+                      </select>
+                    </td>
+                    <td class="p-2 space-x-2">
+                      <button
+                        @click="alert('Detail pesanan:\\n' + JSON.stringify(order, null, 2))"
+                        class="text-indigo-600 hover:underline"
+                      >
+                        Detail
+                      </button>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredOrders.length === 0">
+                    <td colspan="8" class="p-4 text-center text-gray-600">Tidak ada pesanan ditemukan.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Riwayat & Laporan -->
+          <section v-if="tab==='reports'">
+            <h3 class="text-xl font-semibold mb-4">Riwayat & Laporan Penjualan</h3>
+            <form @submit.prevent class="mb-4 max-w-md space-y-4">
+              <div>
+                <label class="block font-semibold mb-1">Dari Tanggal</label>
+                <input
+                  type="date"
+                  v-model="reportDateRange.from"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label class="block font-semibold mb-1">Sampai Tanggal</label>
+                <input
+                  type="date"
+                  v-model="reportDateRange.to"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div class="flex space-x-2">
+                <button
+                  type="button"
+                  @click="exportReportCSV"
+                  class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Ekspor CSV
+                </button>
+                <button
+                  type="button"
+                  @click="exportReportPDF"
+                  class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+                >
+                  Ekspor PDF
+                </button>
+              </div>
+            </form>
+
+            <div class="mb-6 max-w-4xl mx-auto">
+              <canvas id="chartTopProducts" aria-label="Grafik produk terlaris" role="img"></canvas>
+            </div>
+            <div class="mb-6 max-w-4xl mx-auto">
+              <canvas id="chartSalesOverTime" aria-label="Grafik penjualan per hari" role="img"></canvas>
+            </div>
+
+            <div class="max-w-4xl mx-auto bg-white rounded shadow p-4 space-y-2">
+              <h4 class="text-lg font-semibold mb-2">Ringkasan</h4>
+              <p>Omzet: <span class="font-semibold">{{ formatIDR(stats.omzet) }}</span></p>
+              <p>Jumlah Pesanan: <span class="font-semibold">{{ stats.orderCount }}</span></p>
+              <p>Produk Terbaik: <span class="font-semibold">{{ stats.topProductName }}</span></p>
+            </div>
+          </section>
+
+          <!-- Pengaturan -->
+          <section v-if="tab==='settings'">
+            <h3 class="text-xl font-semibold mb-4">Pengaturan Tambahan</h3>
+
+            <section class="mb-6 max-w-md mx-auto bg-white rounded shadow p-6">
+              <h4 class="text-lg font-semibold mb-2">Promo / Diskon</h4>
+              <form @submit.prevent="updatePromo" class="space-y-4">
+                <div>
+                  <label class="block font-semibold mb-1">Kode Promo</label>
+                  <input
+                    type="text"
+                    v-model="promoSettings.code"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    placeholder="Contoh: PROMO10"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Diskon (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    v-model.number="promoSettings.discountPercent"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Diskon Nominal (IDR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    v-model.number="promoSettings.discountNominal"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Periode Berlaku Mulai</label>
+                  <input
+                    type="date"
+                    v-model="promoSettings.validFrom"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Periode Berlaku Sampai</label>
+                  <input
+                    type="date"
+                    v-model="promoSettings.validTo"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  Simpan Promo
+                </button>
+              </form>
+            </section>
+
+            <section class="mb-6 max-w-md mx-auto bg-white rounded shadow p-6">
+              <h4 class="text-lg font-semibold mb-2">Metode Pembayaran</h4>
+              <form @submit.prevent="updatePaymentSettings" class="space-y-2">
+                <div v-for="(enabled, method) in paymentSettings" :key="method" class="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    v-model="paymentSettings[method]"
+                    :id="'pay-'+method"
+                  />
+                  <label :for="'pay-'+method">{{ method }}</label>
+                </div>
+                <button
+                  type="submit"
+                  class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mt-2"
+                >
+                  Simpan Pengaturan Pembayaran
+                </button>
+              </form>
+            </section>
+
+            <section class="max-w-md mx-auto bg-white rounded shadow p-6">
+              <h4 class="text-lg font-semibold mb-2">Pajak & Ongkos Kirim</h4>
+              <form @submit.prevent="updateTaxShipping" class="space-y-4">
+                <div>
+                  <label class="block font-semibold mb-1">Pajak (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    v-model.number="taxShippingSettings.taxPercent"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Ongkos Kirim (IDR)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    v-model.number="taxShippingSettings.shippingCost"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  Simpan Pengaturan
+                </button>
+              </form>
+            </section>
+          </section>
+
+          <!-- Akun Admin -->
+          <section v-if="tab==='accounts'">
+            <h3 class="text-xl font-semibold mb-4">Kelola Akun Admin</h3>
+            <div class="max-w-md mx-auto bg-white rounded shadow p-6 space-y-4">
+              <form @submit.prevent="addAdminAccount" class="space-y-4">
+                <div>
+                  <label class="block font-semibold mb-1">Username</label>
+                  <input
+                    type="text"
+                    v-model="newAdminAccount.username"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Password</label>
+                  <input
+                    type="password"
+                    v-model="newAdminAccount.password"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label class="block font-semibold mb-1">Role</label>
+                  <select
+                    v-model="newAdminAccount.role"
+                    class="w-full border border-gray-300 rounded px-3 py-2"
+                  >
+                    <option value="owner">Owner</option>
+                    <option value="kasir">Kasir</option>
+                    <option value="staf">Staf</option>
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                >
+                  Tambah Akun
+                </button>
+              </form>
+
+              <h4 class="text-lg font-semibold mt-6 mb-2">Daftar Akun</h4>
+              <ul class="space-y-2">
+                <li
+                  v-for="account in adminAccounts"
+                  :key="account.username"
+                  class="flex justify-between items-center border border-gray-300 rounded px-4 py-2"
+                >
+                  <div>
+                    <span class="font-semibold">{{ account.username }}</span> - <span>{{ account.role }}</span>
+                  </div>
+                  <button
+                    @click="resetPassword(account.username)"
+                    class="text-red-600 hover:underline"
+                  >
+                    Reset Password
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </section>
+      `,
+      methods: {
+        formatIDR,
+      },
+      mounted() {
+        // Render charts
+        this.renderCharts();
+      },
+      updated() {
+        this.renderCharts();
+      },
+      methods: {
+        formatIDR,
+        logout() {
+          this.$emit('logout');
+        },
+        openAddProduct() {
+          this.productFormMode = 'add';
+          this.productForm = {
+            id: null,
+            name: '',
+            price: 0,
+            photo: '',
+            category: '',
+            description: '',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: this.products.length + 1,
+          };
+          this.productFormErrors = '';
+          this.tab = 'productForm';
+        },
+        openEditProduct(product) {
+          this.productFormMode = 'edit';
+          this.productForm = { ...product };
+          this.productFormErrors = '';
+          this.tab = 'productForm';
+        },
+        validateProductForm() {
+          if (!this.productForm.name.trim()) {
+            this.productFormErrors = 'Nama produk wajib diisi.';
+            return false;
+          }
+          if (this.productForm.price <= 0) {
+            this.productFormErrors = 'Harga harus lebih dari 0.';
+            return false;
+          }
+          if (!this.productForm.photo.trim()) {
+            this.productFormErrors = 'URL foto produk wajib diisi.';
+            return false;
+          }
+          if (!this.productForm.category.trim()) {
+            this.productFormErrors = 'Kategori wajib diisi.';
+            return false;
+          }
+          if (!['tersedia', 'habis'].includes(this.productForm.status)) {
+            this.productFormErrors = 'Status produk tidak valid.';
+            return false;
+          }
+          this.productFormErrors = '';
+          return true;
+        },
+        saveProduct() {
+          if (!this.validateProductForm()) return;
+          if (this.productFormMode === 'add') {
+            this.$emit('addProduct', { ...this.productForm, id: Date.now() });
+          } else {
+            this.$emit('editProduct', { ...this.productForm });
+          }
+          this.tab = 'products';
+        },
+        cancelProductForm() {
+          this.tab = 'products';
+        },
+        deleteProductConfirm(product) {
+          if (
+            confirm(
+              `Hapus produk "${product.name}"? Tindakan ini tidak dapat dibatalkan.`
+            )
+          ) {
+            this.$emit('deleteProduct', product.id);
+          }
+        },
+        onImportFileChange(e) {
+          this.importFile = e.target.files[0];
+        },
+        importProductsCSV() {
+          if (!this.importFile) {
+            alert('Pilih file CSV terlebih dahulu.');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const csv = e.target.result;
+            this.$emit('importProducts', csv);
+            this.importFile = null;
+            this.$refs.importFileInput.value = '';
+          };
+          reader.readAsText(this.importFile);
+        },
+        exportProductsCSV() {
+          this.$emit('exportProducts');
+        },
+        applyOrderFilter() {
+          let filtered = this.orders;
+          if (this.orderFilter.dateFrom) {
+            filtered = filtered.filter(
+              (o) => new Date(o.orderTime) >= new Date(this.orderFilter.dateFrom)
+            );
+          }
+          if (this.orderFilter.dateTo) {
+            filtered = filtered.filter(
+              (o) => new Date(o.orderTime) <= new Date(this.orderFilter.dateTo)
+            );
+          }
+          if (this.orderFilter.status) {
+            filtered = filtered.filter((o) => o.status === this.orderFilter.status);
+          }
+          if (this.orderFilter.buyerName.trim()) {
+            filtered = filtered.filter((o) =>
+              o.buyerName.toLowerCase().includes(this.orderFilter.buyerName.toLowerCase())
+            );
+          }
+          if (this.orderFilter.paymentMethod) {
+            filtered = filtered.filter(
+              (o) => o.paymentMethod === this.orderFilter.paymentMethod
+            );
+          }
+          this.filteredOrders = filtered;
+        },
+        updateOrderStatus(order, newStatus) {
+          this.$emit('updateOrderStatus', order.id, newStatus);
+        },
+        exportReportCSV() {
+          this.$emit('exportReportCSV', this.reportDateRange);
+        },
+        exportReportPDF() {
+          this.$emit('exportReportPDF', this.reportDateRange);
+        },
+        updatePromo() {
+          this.$emit('updatePromo', this.promoSettings);
+        },
+        updatePaymentSettings() {
+          this.$emit('updatePaymentSettings', this.paymentSettings);
+        },
+        updateTaxShipping() {
+          this.$emit('updateTaxShipping', this.taxShippingSettings);
+        },
+        addAdminAccount() {
+          if (
+            !this.newAdminAccount.username.trim() ||
+            !this.newAdminAccount.password.trim()
+          ) {
+            alert('Username dan password wajib diisi.');
+            return;
+          }
+          this.$emit('addAdminAccount', { ...this.newAdminAccount });
+          this.newAdminAccount = { username: '', password: '', role: 'staf' };
+        },
+        resetPassword(username) {
+          if (
+            confirm(
+              `Reset password untuk akun "${username}"? Password akan dikirim via email/OTP (simulasi).`
+            )
+          ) {
+            this.$emit('resetPassword', username);
+          }
+        },
+        openPOS() {
+          this.$emit('openPOS');
+        },
+        renderCharts() {
+          // Top products chart
+          if (this.stats.topProducts && this.stats.topProducts.length > 0) {
+            const ctx1 = document.getElementById('chartTopProducts');
+            if (ctx1) {
+              if (this.topProductsChart) this.topProductsChart.destroy();
+              this.topProductsChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                  labels: this.stats.topProducts.map((p) => p.name),
+                  datasets: [
+                    {
+                      label: 'Jumlah Terjual',
+                      data: this.stats.topProducts.map((p) => p.quantity),
+                      backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  plugins: {
+                    legend: { display: false },
+                    title: {
+                      display: true,
+                      text: 'Produk Terlaris',
+                      font: { size: 18 },
+                    },
+                  },
+                  scales: {
+                    y: { beginAtZero: true, precision: 0 },
+                  },
+                },
+              });
+            }
+          }
+          // Sales over time chart
+          if (this.stats.salesOverTime && this.stats.salesOverTime.length > 0) {
+            const ctx2 = document.getElementById('chartSalesOverTime');
+            if (ctx2) {
+              if (this.salesOverTimeChart) this.salesOverTimeChart.destroy();
+              this.salesOverTimeChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                  labels: this.stats.salesOverTime.map((d) => d.date),
+                  datasets: [
+                    {
+                      label: 'Penjualan (IDR)',
+                      data: this.stats.salesOverTime.map((d) => d.total),
+                      borderColor: 'rgba(16, 185, 129, 0.8)',
+                      backgroundColor: 'rgba(16, 185, 129, 0.3)',
+                      fill: true,
+                      tension: 0.3,
+                    },
+                  ],
+                },
+                options: {
+                  responsive: true,
+                  plugins: {
+                    legend: { display: true },
+                    title: {
+                      display: true,
+                      text: 'Penjualan Per Hari',
+                      font: { size: 18 },
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        callback: (value) => formatIDR(value),
+                      },
+                    },
+                  },
+                },
+              });
+            }
+          }
+        },
+      },
+    };
+
+    // POS View (Kasir)
+    const POSView = {
+      props: ['products'],
+      emits: ['closePOS', 'submitTransaction'],
+      data() {
+        return {
+          searchTerm: '',
+          filteredProducts: [],
+          transactionItems: [],
+          paymentReceived: 0,
+          paymentMethod: 'Tunai',
+          discountPercent: 0,
+          discountNominal: 0,
+          taxPercent: 10,
+          shippingCost: 15000,
+          errorMsg: '',
+        };
+      },
+      computed: {
+        filteredList() {
+          if (!this.searchTerm.trim()) return this.products;
+          const term = this.searchTerm.toLowerCase();
+          return this.products.filter(
+            (p) =>
+              p.name.toLowerCase().includes(term) ||
+              p.category.toLowerCase().includes(term)
+          );
+        },
+        subtotal() {
+          return this.transactionItems.reduce(
+            (acc, item) => acc + item.price * item.quantity,
+            0
+          );
+        },
+        discountAmount() {
+          const percentDiscount = (this.discountPercent / 100) * this.subtotal;
+          return Math.min(percentDiscount + this.discountNominal, this.subtotal);
+        },
+        taxAmount() {
+          return ((this.subtotal - this.discountAmount) * this.taxPercent) / 100;
+        },
+        total() {
+          return this.subtotal - this.discountAmount + this.taxAmount + this.shippingCost;
+        },
+        change() {
+          return this.paymentReceived - this.total;
+        },
+      },
+      watch: {
+        filteredList() {
+          // Reset search if no results
+          if (this.filteredList.length === 0) {
+            this.searchTerm = '';
+          }
+        },
+      },
+      methods: {
+        addProductToTransaction(product) {
+          if (product.status !== 'tersedia') {
+            alert('Produk tidak tersedia.');
+            return;
+          }
+          const existing = this.transactionItems.find(
+            (item) => item.productId === product.id
+          );
+          if (existing) {
+            existing.quantity++;
+          } else {
+            this.transactionItems.push({
+              productId: product.id,
+              name: product.name,
+              price: product.price,
+              quantity: 1,
+            });
+          }
+        },
+        updateQty(item, qty) {
+          if (qty < 1) return;
+          item.quantity = qty;
+        },
+        removeItem(item) {
+          this.transactionItems = this.transactionItems.filter(
+            (i) => i.productId !== item.productId
+          );
+        },
+        clearTransaction() {
+          if (confirm('Bersihkan transaksi?')) {
+            this.transactionItems = [];
+            this.paymentReceived = 0;
+            this.discountPercent = 0;
+            this.discountNominal = 0;
+          }
+        },
+        submit() {
+          this.errorMsg = '';
+          if (this.transactionItems.length === 0) {
+            this.errorMsg = 'Transaksi kosong.';
+            return;
+          }
+          if (this.paymentReceived < this.total) {
+            this.errorMsg = 'Uang yang diterima kurang.';
+            return;
+          }
+          const transactionData = {
+            id: generateOrderNumber(),
+            items: this.transactionItems.map((i) => ({
+              productId: i.productId,
+              name: i.name,
+              price: i.price,
+              quantity: i.quantity,
+              subtotal: i.price * i.quantity,
+            })),
+            subtotal: this.subtotal,
+            discountPercent: this.discountPercent,
+            discountNominal: this.discountNominal,
+            discountAmount: this.discountAmount,
+            taxPercent: this.taxPercent,
+            taxAmount: this.taxAmount,
+            shippingCost: this.shippingCost,
+            total: this.total,
+            paymentReceived: this.paymentReceived,
+            change: this.change,
+            paymentMethod: this.paymentMethod,
+            orderTime: new Date().toISOString(),
+            status: 'Selesai',
+          };
+          this.$emit('submitTransaction', transactionData);
+          this.clearTransaction();
+        },
+      },
+      template: `
+        <section class="max-w-7xl mx-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">Mode Kasir (POS)</h2>
+            <button
+              @click="$emit('closePOS')"
+              class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+            >
+              Keluar POS
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Produk List -->
+            <div class="bg-white rounded shadow p-4 max-h-[600px] overflow-auto">
+              <input
+                type="text"
+                v-model="searchTerm"
+                placeholder="Cari produk..."
+                class="w-full border border-gray-300 rounded px-3 py-2 mb-4"
+              />
+              <ul class="space-y-2">
+                <li
+                  v-for="product in filteredList"
+                  :key="product.id"
+                  class="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 rounded p-2"
+                  @click="addProductToTransaction(product)"
+                >
+                  <img
+                    :src="product.photo"
+                    :alt="'Foto produk ' + product.name + ', kategori ' + product.category"
+                    class="w-12 h-12 object-cover rounded"
+                    loading="lazy"
+                  />
+                  <div class="flex-1">
+                    <p class="font-semibold">{{ product.name }}</p>
+                    <p class="text-sm text-gray-600">{{ formatIDR(product.price) }}</p>
+                    <p
+                      :class="product.status === 'tersedia' ? 'text-green-600' : 'text-red-600'"
+                      class="text-xs font-semibold"
+                    >
+                      {{ product.status === 'tersedia' ? 'Tersedia' : 'Habis' }}
+                    </p>
+                  </div>
+                </li>
+                <li v-if="filteredList.length === 0" class="text-center text-gray-600">
+                  Produk tidak ditemukan.
+                </li>
+              </ul>
+            </div>
+
+            <!-- Transaksi -->
+            <div class="bg-white rounded shadow p-4 max-h-[600px] overflow-auto flex flex-col">
+              <h3 class="text-lg font-semibold mb-2">Transaksi</h3>
+              <ul class="flex-1 overflow-auto divide-y divide-gray-300 mb-4">
+                <li
+                  v-for="item in transactionItems"
+                  :key="item.productId"
+                  class="flex items-center justify-between py-2"
+                >
+                  <div>
+                    <p class="font-semibold">{{ item.name }}</p>
+                    <p class="text-sm text-gray-600">{{ formatIDR(item.price) }} x {{ item.quantity }}</p>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min="1"
+                      v-model.number="item.quantity"
+                      @input="updateQty(item, item.quantity)"
+                      class="w-16 border border-gray-300 rounded px-2 py-1 text-sm"
+                    />
+                    <button
+                      @click="removeItem(item)"
+                      class="text-red-600 hover:text-red-800"
+                      aria-label="Hapus item"
+                    >
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                </li>
+                <li v-if="transactionItems.length === 0" class="text-center text-gray-600 py-4">
+                  Belum ada item.
+                </li>
+              </ul>
+
+              <button
+                @click="clearTransaction"
+                class="mb-4 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
+              >
+                Bersihkan Transaksi
+              </button>
+
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span>{{ formatIDR(subtotal) }}</span>
+                </div>
+                <div class="flex justify-between items-center space-x-2">
+                  <label>Diskon %:</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    v-model.number="discountPercent"
+                    class="w-20 border border-gray-300 rounded px-2 py-1"
+                  />
+                </div>
+                <div class="flex justify-between items-center space-x-2">
+                  <label>Diskon Nominal (IDR):</label>
+                  <input
+                    type="number"
+                    min="0"
+                    v-model.number="discountNominal"
+                    class="w-32 border border-gray-300 rounded px-2 py-1"
+                  />
+                </div>
+                <div class="flex justify-between">
+                  <span>Pajak ({{ taxPercent }}%):</span>
+                  <span>{{ formatIDR(taxAmount) }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>Ongkos Kirim:</span>
+                  <span>{{ formatIDR(shippingCost) }}</span>
+                </div>
+                <div class="border-t border-gray-300 pt-2 flex justify-between font-semibold text-lg">
+                  <span>Total:</span>
+                  <span>{{ formatIDR(total) }}</span>
+                </div>
+              </div>
+
+              <div class="mt-4 space-y-2">
+                <label class="block font-semibold">Metode Pembayaran</label>
+                <select
+                  v-model="paymentMethod"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="Tunai">Tunai</option>
+                  <option value="QRIS">QRIS</option>
+                  <option value="E-Wallet">E-Wallet</option>
+                  <option value="Transfer Bank">Transfer Bank</option>
+                </select>
+              </div>
+
+              <div class="mt-4 space-y-2">
+                <label class="block font-semibold">Uang Diterima</label>
+                <input
+                  type="number"
+                  min="0"
+                  v-model.number="paymentReceived"
+                  class="w-full border border-gray-300 rounded px-3 py-2"
+                  placeholder="Masukkan jumlah uang yang diterima"
+                />
+              </div>
+
+              <div class="mt-2 flex justify-between font-semibold text-lg">
+                <span>Kembalian:</span>
+                <span :class="change < 0 ? 'text-red-600' : 'text-green-600'">
+                  {{ formatIDR(change < 0 ? 0 : change) }}
+                </span>
+              </div>
+
+              <div v-if="errorMsg" class="text-red-600 font-semibold mt-2">{{ errorMsg }}</div>
+
+              <button
+                @click="submit"
+                class="mt-4 w-full bg-green-600 text-white py-2 rounded hover:bg-green-700"
+              >
+                Selesaikan Transaksi
+              </button>
+            </div>
+          </div>
+        </section>
+      `,
+      methods: {
+        formatIDR,
+      },
+    };
+
+    // --- MAIN APP ---
+
+    createApp({
+      components: {
+        MenuView,
+        ProductDetailView,
+        CartView,
+        CheckoutView,
+        ConfirmationView,
+        AdminLoginView,
+        AdminDashboardView,
+        POSView,
+      },
+      setup() {
+        const view = ref('menu');
+        const mobileNavOpen = ref(false);
+
+        // Data stores
+        const products = reactive([
+          {
+            id: 1,
+            name: 'Kopi Hitam',
+            price: 15000,
+            photo: 'https://placehold.co/400x300?text=Kopi+Hitam',
+            category: 'Minuman',
+            description: 'Kopi hitam asli dengan aroma kuat dan rasa nikmat.',
+            status: 'tersedia',
+            featured: true,
+            promo: false,
+            order: 1,
+          },
+          {
+            id: 2,
+            name: 'Cappuccino',
+            price: 25000,
+            photo: 'https://placehold.co/400x300?text=Cappuccino',
+            category: 'Minuman',
+            description: 'Kopi cappuccino dengan busa susu lembut.',
+            status: 'tersedia',
+            featured: false,
+            promo: true,
+            order: 2,
+          },
+          {
+            id: 3,
+            name: 'Croissant',
+            price: 20000,
+            photo: 'https://placehold.co/400x300?text=Croissant',
+            category: 'Makanan',
+            description: 'Roti croissant renyah dan lembut.',
+            status: 'habis',
+            featured: false,
+            promo: false,
+            order: 3,
+          },
+          {
+            id: 4,
+            name: 'Teh Tarik',
+            price: 12000,
+            photo: 'https://placehold.co/400x300?text=Teh+Tarik',
+            category: 'Minuman',
+            description: 'Teh tarik manis dan creamy.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 4,
+          },
+          {
+            id: 5,
+            name: 'Roti Bakar Coklat',
+            price: 18000,
+            photo: 'https://placehold.co/400x300?text=Roti+Bakar+Coklat',
+            category: 'Makanan',
+            description: 'Roti bakar dengan coklat leleh.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 5,
+          },
+          {
+            id: 6,
+            name: 'Es Jeruk',
+            price: 10000,
+            photo: 'https://placehold.co/400x300?text=Es+Jeruk',
+            category: 'Minuman',
+            description: 'Minuman segar es jeruk asli.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 6,
+          },
+          {
+            id: 7,
+            name: 'Kue Lapis',
+            price: 22000,
+            photo: 'https://placehold.co/400x300?text=Kue+Lapis',
+            category: 'Makanan',
+            description: 'Kue lapis legit dan manis.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 7,
+          },
+          {
+            id: 8,
+            name: 'Americano',
+            price: 18000,
+            photo: 'https://placehold.co/400x300?text=Americano',
+            category: 'Minuman',
+            description: 'Kopi americano dengan rasa kuat.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 8,
+          },
+          {
+            id: 9,
+            name: 'Brownies',
+            price: 25000,
+            photo: 'https://placehold.co/400x300?text=Brownies',
+            category: 'Makanan',
+            description: 'Brownies coklat lembut dan manis.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 9,
+          },
+          {
+            id: 10,
+            name: 'Latte',
+            price: 22000,
+            photo: 'https://placehold.co/400x300?text=Latte',
+            category: 'Minuman',
+            description: 'Kopi latte dengan susu segar.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 10,
+          },
+          {
+            id: 11,
+            name: 'Pancake',
+            price: 30000,
+            photo: 'https://placehold.co/400x300?text=Pancake',
+            category: 'Makanan',
+            description: 'Pancake lembut dengan sirup maple.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 11,
+          },
+          {
+            id: 12,
+            name: 'Es Kopi Susu',
+            price: 20000,
+            photo: 'https://placehold.co/400x300?text=Es+Kopi+Susu',
+            category: 'Minuman',
+            description: 'Es kopi susu manis dan segar.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 12,
+          },
+          {
+            id: 13,
+            name: 'Sandwich',
+            price: 28000,
+            photo: 'https://placehold.co/400x300?text=Sandwich',
+            category: 'Makanan',
+            description: 'Sandwich isi sayur dan daging.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 13,
+          },
+          {
+            id: 14,
+            name: 'Muffin Blueberry',
+            price: 22000,
+            photo: 'https://placehold.co/400x300?text=Muffin+Blueberry',
+            category: 'Makanan',
+            description: 'Muffin dengan blueberry segar.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 14,
+          },
+          {
+            id: 15,
+            name: 'Hot Chocolate',
+            price: 18000,
+            photo: 'https://placehold.co/400x300?text=Hot+Chocolate',
+            category: 'Minuman',
+            description: 'Coklat panas manis dan lembut.',
+            status: 'tersedia',
+            featured: false,
+            promo: false,
+            order: 15,
+          },
+        ]);
+
+        const cart = reactive([]);
+        const selectedProduct = ref(null);
+        const order = ref(null);
+        const adminUser = ref(null);
+        const orders = reactive([]);
+        const stats = reactive({
+          omzet: 0,
+          orderCount: 0,
+          topProductName: '',
+          topProducts: [],
+          salesOverTime: [],
+        });
+
+        // Load from localStorage (simulate backend persistence)
+        function loadData() {
+          const savedProducts = localStorage.getItem('products');
+          if (savedProducts) {
+            const parsed = JSON.parse(savedProducts);
+            products.splice(0, products.length, ...parsed);
+          }
+          const savedOrders = localStorage.getItem('orders');
+          if (savedOrders) {
+            const parsed = JSON.parse(savedOrders);
+            orders.splice(0, orders.length, ...parsed);
+          }
+        }
+        function saveData() {
+          localStorage.setItem('products', JSON.stringify(products));
+          localStorage.setItem('orders', JSON.stringify(orders));
+        }
+
+        // Cart operations
+        function addToCart(product, quantity) {
+          if (product.status !== 'tersedia') {
+            alert('Produk tidak tersedia.');
+            return;
+          }
+          const existing = cart.find((item) => item.productId === product.id);
+          if (existing) {
+            existing.quantity += quantity;
+          } else {
+            cart.push({ productId: product.id, quantity });
+          }
+          alert(`Berhasil menambahkan ${quantity} x ${product.name} ke keranjang.`);
+        }
+        function updateCartQty(productId, quantity) {
+          if (quantity < 1) return;
+          const item = cart.find((i) => i.productId === productId);
+          if (item) {
+            item.quantity = quantity;
+          }
+        }
+        function removeCartItem(productId) {
+          const idx = cart.findIndex((i) => i.productId === productId);
+          if (idx !== -1) {
+            cart.splice(idx, 1);
+          }
+        }
+
+        // View product detail
+        function viewProduct(product) {
+          selectedProduct.value = product;
+          view.value = 'productDetail';
+        }
+
+        // Submit order from checkout
+        function submitOrder(orderData) {
+          orders.push(orderData);
+          saveData();
+          order.value = orderData;
+          cart.splice(0, cart.length);
+          view.value = 'confirmation';
+          // Simulate notification sending
+          setTimeout(() => {
+            alert(
+              `Notifikasi pesanan terkirim ke ${orderData.buyerPhone} (simulasi).`
+            );
+          }, 1000);
+          updateStats();
+        }
+
+        // Admin login success
+        function adminLoginSuccess(user) {
+          adminUser.value = user;
+          view.value = 'adminDashboard';
+        }
+
+        // Admin logout
+        function adminLogout() {
+          adminUser.value = null;
+          view.value = 'menu';
+        }
+
+        // Admin product management
+        function addProduct(product) {
+          products.push(product);
+          saveData();
+          updateStats();
+        }
+        function editProduct(product) {
+          const idx = products.findIndex((p) => p.id === product.id);
+          if (idx !== -1) {
+            products[idx] = product;
+            saveData();
+            updateStats();
+          }
+        }
+        function deleteProduct(productId) {
+          const idx = products.findIndex((p) => p.id === productId);
+          if (idx !== -1) {
+            products.splice(idx, 1);
+            saveData();
+            updateStats();
+          }
+        }
+        function importProducts(csv) {
+          // Simple CSV parse: id,name,price,photo,category,description,status,featured,promo,order
+          const lines = csv.trim().split('\n');
+          const newProducts = [];
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',');
+            if (cols.length >= 10) {
+              newProducts.push({
+                id: Number(cols[0]),
+                name: cols[1],
+                price: Number(cols[2]),
+                photo: cols[3],
+                category: cols[4],
+                description: cols[5],
+                status: cols[6],
+                featured: cols[7] === 'true',
+                promo: cols[8] === 'true',
+                order: Number(cols[9]),
+              });
+            }
+          }
+          products.splice(0, products.length, ...newProducts);
+          saveData();
+          alert('Produk berhasil diimpor.');
+          updateStats();
+        }
+        function exportProducts() {
+          let csv =
+            'id,name,price,photo,category,description,status,featured,promo,order\n';
+          products.forEach((p) => {
+            csv += `${p.id},"${p.name}",${p.price},${p.photo},"${p.category}","${p.description}",${p.status},${p.featured},${p.promo},${p.order}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'products.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+
+        // Update order status
+        function updateOrderStatus(orderId, newStatus) {
+          const idx = orders.findIndex((o) => o.id === orderId);
+          if (idx !== -1) {
+            orders[idx].status = newStatus;
+            if (newStatus === 'Selesai') {
+              orders[idx].finishedTime = new Date().toISOString();
+            }
+            saveData();
+            alert(
+              `Status pesanan ${orderId} diubah menjadi ${newStatus}. Notifikasi terkirim (simulasi).`
+            );
+            updateStats();
+          }
+        }
+
+        // Filter orders (handled in AdminDashboardView)
+
+        // Export reports (CSV & PDF) - simulate CSV only
+        function exportReportCSV(dateRange) {
+          let filtered = orders;
+          if (dateRange.from) {
+            filtered = filtered.filter(
+              (o) => new Date(o.orderTime) >= new Date(dateRange.from)
+            );
+          }
+          if (dateRange.to) {
+            filtered = filtered.filter(
+              (o) => new Date(o.orderTime) <= new Date(dateRange.to)
+            );
+          }
+          let csv =
+            'id,buyerName,buyerAddress,buyerPhone,paymentMethod,total,status,orderTime\n';
+          filtered.forEach((o) => {
+            csv += `${o.id},"${o.buyerName}","${o.buyerAddress}","${o.buyerPhone}",${o.paymentMethod},${o.total},${o.status},${o.orderTime}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'report.csv';
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+        function exportReportPDF(dateRange) {
+          alert('Fitur ekspor PDF belum tersedia (simulasi).');
+        }
+
+        // Promo, payment, tax & shipping settings (simulate no backend)
+
+        // Admin accounts (simulate no backend)
+        const adminAccounts = reactive([
+          { username: 'admin', role: 'owner' },
+        ]);
+        function addAdminAccount(account) {
+          if (
+            adminAccounts.find((a) => a.username === account.username)
+          ) {
+            alert('Username sudah ada.');
+            return;
+          }
+          adminAccounts.push({
+            username: account.username,
+            role: account.role,
+          });
+          alert('Akun admin berhasil ditambahkan (simulasi).');
+        }
+        function resetPassword(username) {
+          alert(
+            `Password untuk akun ${username} telah direset dan dikirim via email/OTP (simulasi).`
+          );
+        }
+
+        // POS submit transaction
+        function submitTransaction(transactionData) {
+          // Save as order with status Selesai
+          orders.push(transactionData);
+          saveData();
+          alert('Transaksi berhasil disimpan.');
+          updateStats();
+        }
+
+        // Update statistics
+        function updateStats() {
+          // Omzet total
+          stats.omzet = orders.reduce((acc, o) => acc + (o.total || 0), 0);
+          stats.orderCount = orders.length;
+
+          // Top products by quantity sold
+          const productSales = {};
+          orders.forEach((o) => {
+            if (o.items) {
+              o.items.forEach((item) => {
+                if (!productSales[item.productId]) {
+                  productSales[item.productId] = {
+                    name: item.name,
+                    quantity: 0,
+                    revenue: 0,
+                  };
+                }
+                productSales[item.productId].quantity += item.quantity;
+                productSales[item.productId].revenue += item.subtotal;
+              });
+            }
+          });
+          const sortedProducts = Object.values(productSales).sort(
+            (a, b) => b.quantity - a.quantity
+          );
+          stats.topProducts = sortedProducts.slice(0, 5);
+          stats.topProductName = sortedProducts.length > 0 ? sortedProducts[0].name : '-';
+
+          // Sales over time (daily)
+          const salesByDate = {};
+          orders.forEach((o) => {
+            const date = new Date(o.orderTime).toISOString().slice(0, 10);
+            if (!salesByDate[date]) salesByDate[date] = 0;
+            salesByDate[date] += o.total || 0;
+          });
+          stats.salesOverTime = Object.entries(salesByDate)
+            .map(([date, total]) => ({ date, total }))
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        // Initialize
+        loadData();
+        updateStats();
+
+        // Reactive adminAccounts for AdminDashboardView
+        return {
+          view,
+          mobileNavOpen,
+          products,
+          cart,
+          selectedProduct,
+          order,
+          adminUser,
+          orders,
+          stats,
+          adminAccounts,
+          setView(v) {
+            view.value = v;
+          },
+          addToCart,
+          updateCartQty,
+          removeCartItem,
+          viewProduct,
+          submitOrder,
+          adminLoginSuccess,
+          adminLogout,
+          addProduct,
+          editProduct,
+          deleteProduct,
+          importProducts,
+          exportProducts,
+          updateOrderStatus,
+          exportReportCSV,
+          exportReportPDF,
+          addAdminAccount,
+          resetPassword,
+          submitTransaction,
+        };
+      },
+    }).mount('#app');
+  </script>
+</body>
+</html>
